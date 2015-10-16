@@ -2,6 +2,10 @@ package module4;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.data.Feature;
@@ -62,13 +66,13 @@ public class EarthquakeCityMap extends PApplet {
 	
 	public void setup() {		
 		// (1) Initializing canvas and map tiles
-		size(900, 700, OPENGL);
+		size(1800, 1400, OPENGL);
 		if (offline) {
 		    map = new UnfoldingMap(this, 200, 50, 650, 600, new MBTilesMapProvider(mbTilesString));
 		    earthquakesURL = "2.5_week.atom";  // The same feed, but saved August 7, 2015
 		}
 		else {
-			map = new UnfoldingMap(this, 200, 50, 650, 600, new Google.GoogleMapProvider());
+			map = new UnfoldingMap(this, 200, 50, 1300, 1200, new Google.GoogleMapProvider());
 			// IF YOU WANT TO TEST WITH A LOCAL FILE, uncomment the next line
 		    //earthquakesURL = "2.5_week.atom";
 		}
@@ -134,24 +138,42 @@ public class EarthquakeCityMap extends PApplet {
 	private void addKey() {	
 		// Remember you can use Processing's graphics methods here
 		fill(255, 250, 240);
-		rect(25, 50, 150, 250);
+		rect(25, 50, 150, 600);
 		
 		fill(0);
 		textAlign(LEFT, CENTER);
 		textSize(12);
 		text("Earthquake Key", 50, 75);
 		
-		fill(color(255, 0, 0));
-		ellipse(50, 125, 15, 15);
-		fill(color(255, 255, 0));
-		ellipse(50, 175, 10, 10);
-		fill(color(0, 0, 255));
-		ellipse(50, 225, 5, 5);
+		//fill(color(255, 0, 0));
+		//ellipse(50, 125, 15, 15);
+		fill(color(255, 255, 255));
+		ellipse(50, 125, 10, 10);
+		fill(color(255, 255, 255));
+		rect(50, 175, 10, 10);
+		fill(0, 255, 0);
+		triangle(55, 225, 50, 235, 60, 235);
+		fill(255, 255, 0);
+		ellipse(50, 325, 10, 10);
+		fill(0, 0, 255);
+		ellipse(50, 375, 10, 10);
+		fill(255, 0, 0);
+		ellipse(50, 425, 10, 10);
+		fill(255,255,255);
+		ellipse(50, 475, 10, 10);
+		line(45, 470, 55, 480);
+		line(45, 480, 55, 470);
 		
 		fill(0, 0, 0);
-		text("5.0+ Magnitude", 75, 125);
-		text("4.0+ Magnitude", 75, 175);
-		text("Below 4.0", 75, 225);
+		//text("5.0+ Magnitude", 75, 125);
+		text("Land Quake", 75, 125);
+		text("Ocean Quake", 75, 175);
+		text("Cities", 75, 225);
+		text("Size ~ Magnitude", 50, 275);
+		text("Shallow", 75, 325);
+		text("Intermediate", 75, 375);
+		text("Deep", 75, 425);
+		text("Past Day Earthquake", 75, 475);
 	}
 
 	
@@ -165,7 +187,11 @@ public class EarthquakeCityMap extends PApplet {
 		// IMPLEMENT THIS: loop over all countries to check if location is in any of them
 		
 		// TODO: Implement this method using the helper method isInCountry
-		
+		for (Marker countryMarker : countryMarkers){
+			if(isInCountry(earthquake, countryMarker)){
+				return true;
+			}
+		}
 		// not inside any country
 		return false;
 	}
@@ -179,6 +205,31 @@ public class EarthquakeCityMap extends PApplet {
 	private void printQuakes() 
 	{
 		// TODO: Implement this method
+		HashMap<String, Integer> hm = new HashMap<String, Integer>();
+		int oceanquakes = 0;
+		for (Marker earthquake : quakeMarkers){
+			if (((EarthquakeMarker)earthquake).isOnLand()){
+				String country = (String)((LandQuakeMarker)earthquake).getProperty("country");
+				//System.out.println("Found earthquake on country " + country);
+				if (hm.containsKey(country)){
+					hm.put(country, hm.get(country)+1);
+				}
+				else {
+					hm.put(country, 1);
+				}
+			}
+			else {
+				oceanquakes++;
+			}
+		}
+		Set hmSet = hm.entrySet();
+		//System.out.println(hmSet.size());
+		Iterator it = hmSet.iterator();
+		while(it.hasNext()){
+			Map.Entry<String, Integer> mentry = (Map.Entry<String, Integer>)it.next();
+			System.out.println("Country " + mentry.getKey() + " has " + mentry.getValue() + " earthquakes");
+		}
+		System.out.println("There were " + oceanquakes + " number of earthquakes on water");
 	}
 	
 	
