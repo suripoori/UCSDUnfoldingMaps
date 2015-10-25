@@ -70,7 +70,7 @@ public class EarthquakeCityMap extends PApplet {
 		    earthquakesURL = "2.5_week.atom";  // The same feed, but saved August 7, 2015
 		}
 		else {
-			map = new UnfoldingMap(this, 200, 50, 650, 600, new Google.GoogleMapProvider());
+			map = new UnfoldingMap(this, 200, 50, 1300, 1300, new Google.GoogleMapProvider());
 			// IF YOU WANT TO TEST WITH A LOCAL FILE, uncomment the next line
 		    //earthquakesURL = "2.5_week.atom";
 		}
@@ -146,6 +146,12 @@ public class EarthquakeCityMap extends PApplet {
 	private void selectMarkerIfHover(List<Marker> markers)
 	{
 		// TODO: Implement this method
+		for(Marker marker : markers){
+			if (marker.isInside(map, mouseX, mouseY)){
+				marker.setSelected(true);
+				lastSelected = (CommonMarker)marker;
+			}
+		}
 	}
 	
 	/** The event handler for mouse clicks
@@ -159,9 +165,69 @@ public class EarthquakeCityMap extends PApplet {
 		// TODO: Implement this method
 		// Hint: You probably want a helper method or two to keep this code
 		// from getting too long/disorganized
+		if(!(earthquakeClicked(quakeMarkers) || cityClicked(cityMarkers))){
+			unhideMarkers();
+		}
 	}
 	
+	private boolean earthquakeClicked(List<Marker> markers){
+		boolean earthquakeClicked = false;
+		for (Marker marker : markers){
+			if (marker.isInside(map, mouseX, mouseY)){
+				earthquakeClicked = true;
+				if (lastClicked == (CommonMarker)marker){
+					lastClicked = null;
+					unhideMarkers();
+				}
+				else if ((lastClicked == null) || (lastClicked != (CommonMarker)marker)){
+					lastClicked = (CommonMarker)marker;
+					showCitiesInThreatCircle(marker);
+				}
+			}
+		}
+		return earthquakeClicked;
+	}
 	
+	private boolean cityClicked(List<Marker> markers){
+		boolean cityClicked = false;
+		for (Marker marker : markers){
+			if (marker.isInside(map, mouseX, mouseY)){
+				cityClicked = true;
+				if (lastClicked == (CommonMarker)marker){
+					lastClicked = null;
+					unhideMarkers();
+				}
+				else if ((lastClicked == null) || (lastClicked != (CommonMarker)marker)){
+					lastClicked = (CommonMarker)marker;
+					showEarthquakesAffectingCity(marker);
+				}
+			}
+		}
+		return cityClicked;
+	}
+	
+	private void showCitiesInThreatCircle(Marker marker){
+		double threatRadius = ((EarthquakeMarker)marker).threatCircle();
+		hideMarkers();
+		for (Marker city : cityMarkers){
+			if (city.getDistanceTo(marker.getLocation()) < threatRadius){
+				System.out.println("Found affected City " + ((CityMarker)city).getCity());
+				city.setHidden(false);
+				marker.setHidden(false);
+			}
+		}
+	}
+	
+	private void showEarthquakesAffectingCity(Marker marker){
+		hideMarkers();
+		for (Marker earthquake : quakeMarkers){
+			if (earthquake.getDistanceTo(marker.getLocation()) < ((EarthquakeMarker)earthquake).threatCircle()){
+				earthquake.setHidden(false);
+				marker.setHidden(false);
+				System.out.println("Found affecting earthquake " + ((EarthquakeMarker)earthquake).getTitle());
+			}
+		}
+	}
 	// loop over and unhide all markers
 	private void unhideMarkers() {
 		for(Marker marker : quakeMarkers) {
@@ -173,6 +239,16 @@ public class EarthquakeCityMap extends PApplet {
 		}
 	}
 	
+	// loop over and hide all markers
+	private void hideMarkers() {
+		for(Marker marker : quakeMarkers) {
+			marker.setHidden(true);
+		}
+			
+		for(Marker marker : cityMarkers) {
+			marker.setHidden(true);
+		}
+	}
 	// helper method to draw key in GUI
 	private void addKey() {	
 		// Remember you can use Processing's graphics methods here
