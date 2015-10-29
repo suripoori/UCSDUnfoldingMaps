@@ -3,16 +3,19 @@ package module6;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import de.fhpotsdam.unfolding.UnfoldingMap;
 import de.fhpotsdam.unfolding.data.Feature;
 import de.fhpotsdam.unfolding.data.GeoJSONReader;
 import de.fhpotsdam.unfolding.data.PointFeature;
+import de.fhpotsdam.unfolding.data.ShapeFeature;
 import de.fhpotsdam.unfolding.geo.Location;
 import de.fhpotsdam.unfolding.marker.AbstractShapeMarker;
 import de.fhpotsdam.unfolding.marker.Marker;
 import de.fhpotsdam.unfolding.marker.MultiMarker;
+import de.fhpotsdam.unfolding.marker.SimpleLinesMarker;
 import de.fhpotsdam.unfolding.providers.Google;
 import de.fhpotsdam.unfolding.providers.MBTilesMapProvider;
 import de.fhpotsdam.unfolding.utils.MapUtils;
@@ -65,6 +68,11 @@ public class EarthquakeCityMap extends PApplet {
 	// NEW IN MODULE 5
 	private CommonMarker lastSelected;
 	private CommonMarker lastClicked;
+	// NEW in MODULE 6
+	private List<AirportMarker> affectedAirports;
+	private List<Marker> airportList;
+	private List<Marker> routeList;
+	private List<AirportMarker> quakedAirports;
 	
 	public void setup() {		
 		// (1) Initializing canvas and map tiles
@@ -116,6 +124,56 @@ public class EarthquakeCityMap extends PApplet {
 		  }
 	    }
 
+	    List<PointFeature> airportfeatures = ParseFeed.parseAirports(this, "airports.dat");
+		
+		// list for markers, hashmap for quicker access when matching with routes
+		airportList = new ArrayList<Marker>();
+		quakedAirports = new ArrayList<AirportMarker>();
+		affectedAirports = new ArrayList<AirportMarker>();
+		
+		HashMap<Integer, Location> airports = new HashMap<Integer, Location>();
+		
+		// create markers from features
+		for(PointFeature feature : airportfeatures) {
+			AirportMarker m = new AirportMarker(feature);
+	
+			m.setRadius(5);
+			airportList.add(m);
+			
+			// put airport in hashmap with OpenFlights unique id for key
+			airports.put(Integer.parseInt(feature.getId()), feature.getLocation());
+		
+		}
+		
+		
+		// parse route data
+		List<ShapeFeature> routes = ParseFeed.parseRoutes(this, "routes.dat");
+		routeList = new ArrayList<Marker>();
+		for(ShapeFeature route : routes) {
+			
+			// get source and destination airportIds
+			int source = Integer.parseInt((String)route.getProperty("source"));
+			int dest = Integer.parseInt((String)route.getProperty("destination"));
+			
+			// get locations for airports on route
+			if(airports.containsKey(source) && airports.containsKey(dest)) {
+				route.addLocation(airports.get(source));
+				route.addLocation(airports.get(dest));
+			}
+			
+			SimpleLinesMarker sl = new SimpleLinesMarker(route.getLocations(), route.getProperties());
+		
+			//System.out.println(sl.getProperties());
+			
+			//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
+			routeList.add(sl);
+		}
+		
+		//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
+		//map.addMarkers(routeList);
+		//UNCOMMENT IF YOU WANT TO SEE ALL AIRPORTS
+		// map.addMarkers(airportList);
+		
 	    // could be used for debugging
 	    printQuakes();
 	 		
@@ -188,6 +246,7 @@ public class EarthquakeCityMap extends PApplet {
 		if (lastClicked != null) {
 			unhideMarkers();
 			lastClicked = null;
+			quakedAirports.clear();
 		}
 		else if (lastClicked == null) 
 		{
@@ -195,6 +254,8 @@ public class EarthquakeCityMap extends PApplet {
 			if (lastClicked == null) {
 				checkCitiesForClick();
 			}
+			//Checks which airports arrivals and departures will be affected because of earthquake
+			checkAffectedAirports();
 		}
 	}
 	
@@ -218,6 +279,13 @@ public class EarthquakeCityMap extends PApplet {
 					if (quakeMarker.getDistanceTo(marker.getLocation()) 
 							> quakeMarker.threatCircle()) {
 						quakeMarker.setHidden(true);
+					}
+				}
+				for (Marker mhide : airportList){
+					AirportMarker airport = (AirportMarker)mhide;
+					//System.out.println("Comparing " + airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1) +", "+marker.getStringProperty("name").toString().toLowerCase());
+					if (airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1).equals(marker.getStringProperty("name").toString().toLowerCase())){
+						quakedAirports.add(airport);
 					}
 				}
 				return;
@@ -246,8 +314,30 @@ public class EarthquakeCityMap extends PApplet {
 							> marker.threatCircle()) {
 						mhide.setHidden(true);
 					}
+					else {
+						for (Marker affected : airportList){
+							AirportMarker airport = (AirportMarker)affected;
+							//System.out.println("Comparing " + airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1)+", "+mhide.getStringProperty("name").toString().toLowerCase());
+							if (airport.getCity().toString().toLowerCase().substring(1, airport.getCity().length()-1).equals(mhide.getStringProperty("name").toString().toLowerCase())){
+								quakedAirports.add(airport);
+							}
+						}
+					}
 				}
 				return;
+			}
+		}
+	}
+	
+	private void checkAffectedAirports(){
+		if (quakedAirports.isEmpty()){
+			return;
+		}
+		for (AirportMarker quaked : quakedAirports){
+			for (Marker route : routeList){
+				if (((SimpleLinesMarker)route).getLocations().contains(quaked.getLocation())){
+					System.out.println(((SimpleLinesMarker)route).getProperties());
+				}
 			}
 		}
 	}
