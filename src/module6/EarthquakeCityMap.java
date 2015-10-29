@@ -69,7 +69,6 @@ public class EarthquakeCityMap extends PApplet {
 	private CommonMarker lastSelected;
 	private CommonMarker lastClicked;
 	// NEW in MODULE 6
-	private List<AirportMarker> affectedAirports;
 	private List<Marker> airportList;
 	private List<Marker> routeList;
 	private List<AirportMarker> quakedAirports;
@@ -130,7 +129,7 @@ public class EarthquakeCityMap extends PApplet {
 		// list for markers, hashmap for quicker access when matching with routes
 		airportList = new ArrayList<Marker>();
 		quakedAirports = new ArrayList<AirportMarker>();
-		affectedAirports = new ArrayList<AirportMarker>();
+		
 		
 		airports = new HashMap<Integer, Location>();
 		
