@@ -12,10 +12,10 @@ import processing.core.PGraphics;
  */
 public class AirportMarker extends CommonMarker {
 	public static List<SimpleLinesMarker> routes;
-	
+	private int id;
 	public AirportMarker(Feature city) {
 		super(((PointFeature)city).getLocation(), city.getProperties());
-	
+		id = Integer.parseInt(city.getId());
 	}
 	
 	@Override
@@ -38,5 +38,10 @@ public class AirportMarker extends CommonMarker {
 	public String getCity()
 	{
 		return getStringProperty("city");
+	}
+	
+	public String getId()
+	{
+		return Integer.toString(id);
 	}
 }

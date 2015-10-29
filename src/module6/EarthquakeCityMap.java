@@ -73,6 +73,7 @@ public class EarthquakeCityMap extends PApplet {
 	private List<Marker> airportList;
 	private List<Marker> routeList;
 	private List<AirportMarker> quakedAirports;
+	private HashMap<Integer, Location> airports;
 	
 	public void setup() {		
 		// (1) Initializing canvas and map tiles
@@ -131,13 +132,14 @@ public class EarthquakeCityMap extends PApplet {
 		quakedAirports = new ArrayList<AirportMarker>();
 		affectedAirports = new ArrayList<AirportMarker>();
 		
-		HashMap<Integer, Location> airports = new HashMap<Integer, Location>();
+		airports = new HashMap<Integer, Location>();
 		
 		// create markers from features
 		for(PointFeature feature : airportfeatures) {
 			AirportMarker m = new AirportMarker(feature);
 	
 			m.setRadius(5);
+			m.setHidden(true);
 			airportList.add(m);
 			
 			// put airport in hashmap with OpenFlights unique id for key
@@ -172,7 +174,7 @@ public class EarthquakeCityMap extends PApplet {
 		//UNCOMMENT IF YOU WANT TO SEE ALL ROUTES
 		//map.addMarkers(routeList);
 		//UNCOMMENT IF YOU WANT TO SEE ALL AIRPORTS
-		// map.addMarkers(airportList);
+		map.addMarkers(airportList);
 		
 	    // could be used for debugging
 	    printQuakes();
@@ -286,6 +288,10 @@ public class EarthquakeCityMap extends PApplet {
 					//System.out.println("Comparing " + airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1) +", "+marker.getStringProperty("name").toString().toLowerCase());
 					if (airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1).equals(marker.getStringProperty("name").toString().toLowerCase())){
 						quakedAirports.add(airport);
+						airport.setHidden(true);
+					}
+					else {
+						airport.setHidden(true);
 					}
 				}
 				return;
@@ -320,6 +326,10 @@ public class EarthquakeCityMap extends PApplet {
 							//System.out.println("Comparing " + airport.getCity().toLowerCase().substring(1, airport.getCity().length()-1)+", "+mhide.getStringProperty("name").toString().toLowerCase());
 							if (airport.getCity().toString().toLowerCase().substring(1, airport.getCity().length()-1).equals(mhide.getStringProperty("name").toString().toLowerCase())){
 								quakedAirports.add(airport);
+								airport.setHidden(true);
+							}
+							else {
+								airport.setHidden(true);
 							}
 						}
 					}
@@ -331,12 +341,29 @@ public class EarthquakeCityMap extends PApplet {
 	
 	private void checkAffectedAirports(){
 		if (quakedAirports.isEmpty()){
+			System.out.println("No airports from the dataset affected.");
 			return;
 		}
+		List<SimpleLinesMarker> routesAffected = new ArrayList<SimpleLinesMarker>();
+		System.out.println("Routes affected are: ");
 		for (AirportMarker quaked : quakedAirports){
 			for (Marker route : routeList){
 				if (((SimpleLinesMarker)route).getLocations().contains(quaked.getLocation())){
 					System.out.println(((SimpleLinesMarker)route).getProperties());
+					routesAffected.add((SimpleLinesMarker)route);
+				}
+			}
+		}
+		
+		for (Marker route : routesAffected){
+			Integer source_id = Integer.parseInt((String)((SimpleLinesMarker)route).getProperty("source"));
+			Integer dest_id = Integer.parseInt((String)((SimpleLinesMarker)route).getProperty("destination"));
+			//System.out.println("source_id is " + source_id + " dest_id is " + dest_id);
+			for (Marker airport : airportList){
+				//System.out.println(((AirportMarker)airport).getId());
+				if(((AirportMarker)airport).getId().equals(Integer.toString(source_id)) || 
+						((AirportMarker)airport).getId().equals(Integer.toString(dest_id))){
+					((AirportMarker)airport).setHidden(false);
 				}
 			}
 		}
@@ -351,6 +378,10 @@ public class EarthquakeCityMap extends PApplet {
 		for(Marker marker : cityMarkers) {
 			marker.setHidden(false);
 		}
+		
+		/*for(Marker marker : airportList) {
+			marker.setHidden(false);
+		}*/
 	}
 	
 	// helper method to draw key in GUI
